@@ -45,26 +45,6 @@ The labs may cover areas such as:
 * Malware and defensive concepts
 * Security tools and methodologies
 
-## Repository Structure
-
-```text
-CEHV13_lab_writeups/
-├── README.md
-├── Reconnaissance/
-├── Enumeration/
-├── Web_Security/
-├── Password_Attacks/
-├── Privilege_Escalation/
-├── Metasploit/
-├── Linux/
-├── Windows/
-└── Other/
-```
-
-The structure may change as more labs and exercises are added.
-
-## Write-up Format
-
 Where appropriate, each lab follows a structure similar to:
 
 ```text
